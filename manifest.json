@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.mshareef-git.omavibes",
+  "name": "OmaVibes",
+  "version": "1.0.0",
+  "author": "Mohammed Shareef",
+  "license": "MIT",
+  "description": "A cozy Mechanical Keyboard sound effects with 25 different soundpacks,search,random playback, and volume control for omarchy bar",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "OmaVibes",
+    "description": "A cozy Mechanical Keyboard sound effects with 25 different soundpacks,search,random playback, and volume control for omarchy bar",
+    "category": "Audio",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
