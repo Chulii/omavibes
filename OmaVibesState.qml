@@ -18,6 +18,7 @@ QtObject {
         { name: "animal crossing nl",                 folder: "animal_crossing_nl" },
         { name: "banana split lubed",                 folder: "banana split lubed" },
         { name: "boxjade",                            folder: "boxjade" },
+        { name: "Chalks",                             folder: "chalks" },
         { name: "cherrymx black abs",                 folder: "cherrymx-black-abs" },
         { name: "cherrymx black pbt",                 folder: "cherrymx-black-pbt" },
         { name: "cherrymx blue abs",                  folder: "cherrymx-blue-abs" },
@@ -27,15 +28,18 @@ QtObject {
         { name: "cherrymx red pbt",                   folder: "cherrymx-red-pbt" },
         { name: "Dino Alpacas",                       folder: "Dino_Alpacas" },
         { name: "eg oreo",                            folder: "eg-oreo" },
+        { name: "Farts",                              folder: "Farts" },
         { name: "Koala",                              folder: "Koala" },
         { name: "Lincoln Typewriter",                 folder: "Lincoln Typewriter" },
         { name: "nk cream",                           folder: "nk-cream" },
         { name: "osu",                                folder: "osu" },
         { name: "penumbra",                           folder: "penumbra" },
+        { name: "Press",                              folder: "Press" },
         { name: "Razer Green (Blackwidow Elite)",     folder: "Razer Green (Blackwidow Elite) - Akira" },
         { name: "shadowgun",                          folder: "shadowgun" },
         { name: "sine bumps 2",                       folder: "sine bumps 2" },
         { name: "tealios v2 Akira",                   folder: "tealios-v2_Akira" },
+        { name: "Thocks",                             folder: "Thocks" },
         { name: "trails in the sky",                  folder: "trails-in-the-sky" },
         { name: "Trust GXT 865 ASTA",                 folder: "Trust_GXT_865_ASTA" }
     ]
@@ -92,18 +96,23 @@ QtObject {
         interval: 300
         property string packFolder: ""
         property string packName: ""
-        onTriggered: {
-            const launchCmd = "BIN=$(which wayvibes 2>/dev/null || echo '" + state.pluginBin + "'); " +
-                "PACK_DIR='" + state.pluginPacksDir + packFolder + "'; " +
-                "[ -d '" + state.userPacksDir + packFolder + "' ] && PACK_DIR='" + state.userPacksDir + packFolder + "'; " +
-                "$BIN \"$PACK_DIR/\" -v " + String(state.volumeFor(packName)) + " -bg"
+      onTriggered: {
+          const volumeValue = Number(state.volumeFor(packName))
+          const volume = Number.isFinite(volumeValue)
+              ? Math.max(1, Math.min(10, Math.round(volumeValue)))
+              : state.defaultVolume
 
-            launchProc.command = ["bash", "-c", launchCmd]
-            launchProc.running = true
-            state.currentPack = packName
-            state.isPlaying = true
-            state.save()
-        }
+          const launchCmd = "BIN=$(which wayvibes 2>/dev/null || echo '" + state.pluginBin + "'); " +
+              "PACK_DIR='" + state.pluginPacksDir + packFolder + "'; " +
+              "[ -d '" + state.userPacksDir + packFolder + "' ] && PACK_DIR='" + state.userPacksDir + packFolder + "'; " +
+              "$BIN \"$PACK_DIR/\" -v " + String(volume) + " -bg"
+
+          launchProc.command = ["bash", "-c", launchCmd]
+          launchProc.running = true
+          state.currentPack = packName
+          state.isPlaying = true
+          state.save()
+      }
     }
 
     property Process launchProc: Process {}
