@@ -1,4 +1,11 @@
-OmaVibes
+# OmaVibes
+<img width="1536" height="1024" alt="preview" src="https://github.com/user-attachments/assets/ce817e0f-87d0-48ce-8689-35115b2382ec" />
+<img width="1899" height="1080" alt="preview1" src="https://github.com/user-attachments/assets/288f805b-8436-4ba8-bb2f-b9d572ca87c1" />
+
+
+https://github.com/user-attachments/assets/c6a59ad7-b5af-4149-bff5-a7361f42ecd2
+
+
 
 I did'nt actually planned on releasing this for some reason i changed my mind and the reason i created this plugin is because i couldn't afford the mechanical keyboard sounds those thocky,creamy ones. so what i did is create a plugin (originally it was using walker) that plays mechanical keyboard sounds while using the keyboard. it has different types of sounds which i mentioned below. hope u enjoy this. heres the detail about the plugin
 OmaVibes lets you browse, search, select, randomize, and control the volume of keyboard soundpacks directly from the Omarchy top bar.
