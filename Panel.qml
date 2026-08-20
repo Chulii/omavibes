@@ -15,6 +15,7 @@ Panel {
     property var omaState: OmaVibesState
 
     property string searchText: ""
+    property int highlightedIndex: -1
 
     readonly property string uiFont:
         root.bar ? root.bar.fontFamily : Style.font.family
@@ -62,6 +63,8 @@ Panel {
     }
 
     function close() {
+        root.searchText = ""
+        root.highlightedIndex = -1
         root.controller.hide()
     }
 
@@ -80,6 +83,51 @@ Panel {
         var value = 1 + Math.round(ratio * 9)
 
         omaState.setVolume(value)
+    }
+
+    function resetHighlight() {
+        Qt.callLater(function() {
+            highlightedIndex = filteredPacks.length > 0 ? 0 : -1
+
+            if (highlightedIndex >= 0)
+                packList.positionViewAtIndex(
+                    highlightedIndex,
+                    ListView.Beginning
+                )
+        })
+    }
+
+    function moveHighlight(direction) {
+        if (filteredPacks.length === 0) {
+            highlightedIndex = -1
+            return
+        }
+
+        var nextIndex = highlightedIndex + direction
+
+        if (nextIndex < 0)
+            nextIndex = 0
+
+        if (nextIndex >= filteredPacks.length)
+            nextIndex = filteredPacks.length - 1
+
+        highlightedIndex = nextIndex
+
+        packList.positionViewAtIndex(
+            highlightedIndex,
+            ListView.Contain
+        )
+    }
+
+    function playHighlighted() {
+        if (
+            highlightedIndex >= 0 &&
+            highlightedIndex < filteredPacks.length
+        ) {
+            omaState.play(
+                filteredPacks[highlightedIndex].name
+            )
+        }
     }
 
     KeyboardPanel {
@@ -160,6 +208,24 @@ Panel {
                     onTextChanged: {
                         if (root.searchText !== text)
                             root.searchText = text
+
+                        root.resetHighlight()
+                    }
+
+                    Keys.onPressed: function(event) {
+                        if (event.key === Qt.Key_Down) {
+                            root.moveHighlight(1)
+                            event.accepted = true
+                        } else if (event.key === Qt.Key_Up) {
+                            root.moveHighlight(-1)
+                            event.accepted = true
+                        } else if (
+                            event.key === Qt.Key_Return ||
+                            event.key === Qt.Key_Enter
+                        ) {
+                            root.playHighlighted()
+                            event.accepted = true
+                        }
                     }
                 }
 
@@ -206,18 +272,26 @@ Panel {
                                 property bool selected:
                                     omaState.currentPack === modelData.name
 
+                                property bool keyboardSelected:
+                                    index === root.highlightedIndex
+
                                 color:
-                                    selected
+                                    keyboardSelected
                                         ? Style.selectedFillFor(
                                             Color.popups.text,
                                             Color.accent
                                           )
-                                        : mouseArea.containsMouse
-                                            ? Style.hoverFillFor(
+                                        : selected
+                                            ? Style.selectedFillFor(
                                                 Color.popups.text,
                                                 Color.accent
                                               )
-                                            : "transparent"
+                                            : mouseArea.containsMouse
+                                                ? Style.hoverFillFor(
+                                                    Color.popups.text,
+                                                    Color.accent
+                                                  )
+                                                : "transparent"
 
                                 Text {
                                     anchors.left: parent.left
@@ -265,6 +339,7 @@ Panel {
                                     hoverEnabled: true
 
                                     onClicked: {
+                                        root.highlightedIndex = index
                                         omaState.play(modelData.name)
                                     }
                                 }
@@ -407,24 +482,24 @@ Panel {
                 // VOLUME HEADER
                 // ─────────────────────────
 
+                Text {
+                    text:
+                        omaState.currentPack
+                            ? "Volume: " +
+                              Math.round(
+                                  omaState.volumeFor(
+                                      omaState.currentPack
+                                  )
+                              )
+                            : "Volume: —"
 
-Text {
-    text:
-        omaState.currentPack
-            ? "Volume: " +
-              Math.round(
-                  omaState.volumeFor(
-                      omaState.currentPack
-                  )
-              )
-            : "Volume: —"
+                    color: Color.popups.text
 
-    color: Color.popups.text
+                    font.family: root.uiFont
+                    font.pixelSize: 14
+                    font.bold: true
+                }
 
-    font.family: root.uiFont
-    font.pixelSize: 14
-    font.bold: true
-}
                 // ─────────────────────────
                 // VOLUME SLIDER
                 // ─────────────────────────
