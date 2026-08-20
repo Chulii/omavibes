@@ -1,6 +1,6 @@
 # OmaVibes: Type with Cozy Sound
-
 Mechanical keyboard sound effects with 25 different soundpacks, search, random playback, and volume control for the Omarchy bar.
+
 ---
 
 <img width="1536" height="1024" alt="preview" src="https://github.com/user-attachments/assets/ce817e0f-87d0-48ce-8689-35115b2382ec" />
@@ -17,6 +17,13 @@ https://github.com/user-attachments/assets/c6a59ad7-b5af-4149-bff5-a7361f42ecd2
 >
 > Hopefully you enjoy it.
 
+
+## What is OmaVibes?
+OmaVibes is an Omarchy bar widget that lets you play mechanical keyboard sound effects while typing.
+
+It uses **wayvibes**, a keyboard sound runtime that plays sounds in response to keyboard input. The required runtime is bundled with OmaVibes, so no separate wayvibes installation is required.
+
+---
 ## Features
 
 * **Omarchy bar integration** — Open OmaVibes directly from the top bar.
