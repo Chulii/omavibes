@@ -6,7 +6,11 @@ Mechanical keyboard sound effects with 25 different soundpacks, search, random p
 <img width="1536" height="1024" alt="preview" src="https://github.com/user-attachments/assets/ce817e0f-87d0-48ce-8689-35115b2382ec" />
 <img width="1899" height="1080" alt="preview1" src="https://github.com/user-attachments/assets/288f805b-8436-4ba8-bb2f-b9d572ca87c1" />
 
+
 https://github.com/user-attachments/assets/c6a59ad7-b5af-4149-bff5-a7361f42ecd2
+
+
+`Note: Enable sound in the above preview video`
 
 ---
 > I didn't originally plan on releasing this.
