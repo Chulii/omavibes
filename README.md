@@ -1,6 +1,6 @@
 # OmaVibes: Type with Cozy Sound
 
-Mechanical keyboard sound effects with 25 different soundpacks, search, random playback, and volume control for the Omarchy bar.
+Mechanical keyboard sound effects with 29 different soundpacks, search, random playback, and volume control for the Omarchy bar.
 
 ---
 
