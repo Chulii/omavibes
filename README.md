@@ -2,7 +2,7 @@
 
 Mechanical keyboard sound effects with 25 different soundpacks, search, random playback, and volume control for the Omarchy bar.
 ---
-# OmaVibes: Type with Cozy sound
+
 <img width="1536" height="1024" alt="preview" src="https://github.com/user-attachments/assets/ce817e0f-87d0-48ce-8689-35115b2382ec" />
 <img width="1899" height="1080" alt="preview1" src="https://github.com/user-attachments/assets/288f805b-8436-4ba8-bb2f-b9d572ca87c1" />
 
