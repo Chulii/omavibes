@@ -7,8 +7,11 @@ import Quickshell.Io
 QtObject {
     id: state
 
-    readonly property string pluginBin: Quickshell.env("HOME") + "/.config/omarchy/plugins/omavibes/bin/wayvibes"
-    readonly property string pluginPacksDir: Quickshell.env("HOME") + "/.config/omarchy/plugins/omavibes/packs/"
+    readonly property string pluginDir: decodeURIComponent(
+        Qt.resolvedUrl("./").toString().replace(/^file:\/\//, "").replace(/\/$/, "")
+    )
+    readonly property string pluginBin: pluginDir + "/bin/wayvibes"
+    readonly property string pluginPacksDir: pluginDir + "/packs/"
     readonly property string userPacksDir: Quickshell.env("HOME") + "/wayvibes/"
     readonly property string stateFile: Quickshell.env("HOME") + "/.local/state/omarchy/omavibes.json"
 
