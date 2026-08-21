@@ -51,6 +51,10 @@ QtObject {
 
     function volumeFor(packName) {
         return packVolumes[packName] !== undefined ? packVolumes[packName] : defaultVolume
+      }
+      
+    function shellQuote(value) {
+        return "'" + String(value).replace(/'/g, "'\\''") + "'"
     }
 
     function play(packName) {
@@ -96,23 +100,33 @@ QtObject {
         interval: 300
         property string packFolder: ""
         property string packName: ""
-      onTriggered: {
-          const volumeValue = Number(state.volumeFor(packName))
-          const volume = Number.isFinite(volumeValue)
-              ? Math.max(1, Math.min(10, Math.round(volumeValue)))
-              : state.defaultVolume
+    onTriggered: {
+        const volumeValue = Number(state.volumeFor(packName))
+        const volume = Number.isFinite(volumeValue)
+            ? Math.max(1, Math.min(10, Math.round(volumeValue)))
+            : state.defaultVolume
 
-          const launchCmd = "BIN=$(which wayvibes 2>/dev/null || echo '" + state.pluginBin + "'); " +
-              "PACK_DIR='" + state.pluginPacksDir + packFolder + "'; " +
-              "[ -d '" + state.userPacksDir + packFolder + "' ] && PACK_DIR='" + state.userPacksDir + packFolder + "'; " +
-              "$BIN \"$PACK_DIR/\" -v " + String(volume) + " -bg"
+        const pluginBin = shellQuote(state.pluginBin)
+        const pluginPackDir = shellQuote(
+            state.pluginPacksDir + packFolder
+        )
+        const userPackDir = shellQuote(
+            state.userPacksDir + packFolder
+        )
 
-          launchProc.command = ["bash", "-c", launchCmd]
-          launchProc.running = true
-          state.currentPack = packName
-          state.isPlaying = true
-          state.save()
-      }
+        const launchCmd =
+            "BIN=$(which wayvibes 2>/dev/null || echo " + pluginBin + "); " +
+            "PACK_DIR=" + pluginPackDir + "; " +
+            "[ -d " + userPackDir + " ] && PACK_DIR=" + userPackDir + "; " +
+            "$BIN \"$PACK_DIR/\" -v " + String(volume) + " -bg"
+
+        launchProc.command = ["bash", "-c", launchCmd]
+        launchProc.running = true
+
+        state.currentPack = packName
+        state.isPlaying = true
+        state.save()
+    }
     }
 
     property Process launchProc: Process {}
