@@ -1,0 +1,63 @@
+name: Build and attest Wayvibes
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  build-wayvibes:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Build Wayvibes in pinned toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p dist
+
+          docker run --rm \
+            --platform linux/amd64 \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w /workspace/third_party/wayvibes \
+            docker.io/library/gcc@sha256:6a251e45411969f95e57f2587563dfba89d449798b80504bcebc7fad6f210200 \
+            bash -euxo pipefail -c '
+              apt-get update
+              apt-get install -y --no-install-recommends libevdev-dev
+              make clean
+              make
+              cp wayvibes /workspace/dist/wayvibes
+            '
+
+          sha256sum dist/wayvibes
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: wayvibes-linux-amd64
+          path: dist/wayvibes
+          if-no-files-found: error
+
+      - name: Attest build provenance
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
+        with:
+          subject-path: dist/wayvibes
+
+      - name: Verify build provenance
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          gh attestation verify \
+            dist/wayvibes \
+            --repo "${GITHUB_REPOSITORY}" \
+            --signer-workflow "${GITHUB_REPOSITORY}/.github/workflows/build-wayvibes.yml"
