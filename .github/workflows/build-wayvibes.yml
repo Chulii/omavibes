@@ -30,7 +30,10 @@ jobs:
             docker.io/library/gcc@sha256:6a251e45411969f95e57f2587563dfba89d449798b80504bcebc7fad6f210200 \
             bash -euxo pipefail -c '
               apt-get update
-              apt-get install -y --no-install-recommends libevdev-dev
+              apt-get install -y --no-install-recommends \
+                libevdev-dev=1.13.4+dfsg-1 \
+                libevdev2=1.13.4+dfsg-1 \
+                nlohmann-json3-dev=3.11.3-2.1
               make clean
               make
               cp wayvibes /workspace/dist/wayvibes
