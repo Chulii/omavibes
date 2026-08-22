@@ -1,0 +1,20 @@
+# Compiled binaries
+wayvibes
+third_party/wayvibes/wayvibes
+
+# Runtime/generated data
+*.log
+
+# OS/editor junk
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Temporary files
+/tmp/
+tmp/
+
+# Personal/runtime state
+analytics.json
+omavibes-analytics.json

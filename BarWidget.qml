@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell
-import qs.Commons
 import qs.Ui
 
 BarWidget {
@@ -8,9 +7,13 @@ BarWidget {
 
     moduleName: "io.github.mshareef-git.omavibes"
 
-    readonly property bool opened: panelLoader.item
-        ? panelLoader.item.opened === true
-        : false
+    readonly property bool opened:
+        panelLoader.item ? panelLoader.item.opened === true : false
+
+    readonly property bool popoutSwitchClosing:
+        panelLoader.item
+            ? panelLoader.item.popoutSwitchClosing === true
+            : false
 
     function open() {
         if (panelLoader.item)
@@ -27,6 +30,11 @@ BarWidget {
             panelLoader.item.toggle()
     }
 
+    function closeForPopoutSwitch() {
+        if (panelLoader.item && panelLoader.item.closeForPopoutSwitch)
+            panelLoader.item.closeForPopoutSwitch()
+    }
+
     function injectPanel() {
         if (!panelLoader.item)
             return
@@ -41,18 +49,27 @@ BarWidget {
 
     onBarChanged: injectPanel()
 
-    Loader {
-        id: panelLoader
+Loader {
+    id: panelLoader
+    active: true
+    source: Qt.resolvedUrl("Panel.qml")
+    visible: false
 
-        active: true
-        source: Qt.resolvedUrl("Panel.qml")
-        visible: false
-
-        onLoaded: {
-            root.injectPanel()
-            Qt.callLater(root.injectPanel)
-        }
+    onLoaded: {
+        console.log("OMAVIBES PANEL LOADED")
+        root.injectPanel()
+        Qt.callLater(root.injectPanel)
     }
+
+    onStatusChanged: {
+        console.log(
+            "OMAVIBES LOADER STATUS:",
+            panelLoader.status,
+            "SOURCE:",
+            panelLoader.source
+        )
+    }
+}
 
     WidgetButton {
         id: button
@@ -60,12 +77,17 @@ BarWidget {
         anchors.fill: parent
         bar: root.bar
 
-        text: "\udb80\udf0c"
-        tooltipText: "Open OmaVibes"
+        // Keep the existing OmaVibes keyboard icon.
+        text: "⌨"
+        tooltipText: "OmaVibes"
 
-        onPressed: function(buttonCode) {
-            if (buttonCode === Qt.LeftButton)
-                root.toggle()
-        }
+onPressed: function(buttonCode) {
+    console.log("OMAVIBES CLICK:", buttonCode)
+    if (buttonCode === Qt.LeftButton) {
+        console.log("OMAVIBES PANEL ITEM:", panelLoader.item)
+        root.toggle()
+        console.log("OMAVIBES TOGGLE CALLED")
+    }
+}
     }
 }
