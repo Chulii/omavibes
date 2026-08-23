@@ -16,7 +16,7 @@ Panel {
 
     property string searchText: ""
     property int highlightedIndex: -1
-    property string activeView: "sounds" // "sounds" | "analytics"
+    property string activeView: "sounds" // "sounds" | "profile" | "stats"
     property string analyticsGraphView: "day" // "day" | "week" | "month"
 
     function analyticsWordsTooltip(item) {
@@ -33,11 +33,55 @@ Panel {
     readonly property string uiFont:
         root.bar ? root.bar.fontFamily : Style.font.family
 
-    // Visualization-only theme roles. Normal OmaVibes UI keeps its existing palette.
+    // Theme-derived visualization palette. Quattro exposes accent/urgent and
+    // the neutral foreground ramp to plugins; derive extra shades from those
+    // roles instead of hard-coding a separate color scheme.
+    // Live Quattro theme palette. Keep visualizations tied to semantic
+    // theme roles so the whole profile adapts when the user changes theme.
     readonly property color vizPrimary: Color.accent
     readonly property color vizSecondary: Color.urgent
-    readonly property color vizNeutral: Color.popups.text
+    readonly property color vizTertiary: Color.foreground
+    readonly property color vizQuaternary: Qt.lighter(Color.accent, 1.22)
+    readonly property color vizNeutral: Color.muted
     readonly property color vizMuted: Color.muted
+
+    function tint(colorValue, alpha) {
+        return Qt.rgba(
+            colorValue.r,
+            colorValue.g,
+            colorValue.b,
+            Math.max(0, Math.min(1, alpha))
+        )
+    }
+
+    function vizColor(index) {
+        const palette = [
+            vizPrimary,
+            vizSecondary,
+            vizTertiary,
+            vizQuaternary
+        ]
+        return palette[Math.max(0, Number(index) || 0) % palette.length]
+    }
+
+    function keyDisplayLabel(key) {
+        const labels = {
+            "BACKSPACE": "BS",
+            "SPACE": "SPC",
+            "ENTER": "ENT",
+            "CAPSLOCK": "CAPS",
+            "LEFTSHIFT": "SHIFT",
+            "RIGHTSHIFT": "SHIFT",
+            "SHIFT": "SHIFT",
+            "CTRL": "CTRL",
+            "ALT": "ALT",
+            "META": "META",
+            "TAB": "TAB",
+            "PAGEUP": "PGUP",
+            "PAGEDOWN": "PGDN"
+        }
+        return labels[key] || key
+    }
 
     readonly property var filteredPacks:
         omaState && omaState.packs
@@ -45,6 +89,24 @@ Panel {
                 p => p.name.toLowerCase().includes(searchText.toLowerCase())
               )
             : []
+
+    function formatDuration(seconds) {
+        const total = Math.max(0, Math.round(Number(seconds) || 0))
+        const hours = Math.floor(total / 3600)
+        const minutes = Math.floor((total % 3600) / 60)
+        if (hours > 0) return hours + "h " + minutes + "m"
+        return minutes + "m"
+    }
+
+    function tierColor(index) {
+        const palette = [
+            vizPrimary,
+            vizSecondary,
+            vizTertiary,
+            vizQuaternary
+        ]
+        return palette[Math.max(0, Number(index) || 0) % palette.length]
+    }
 
     function formatPackName(name) {
         if (!name)
@@ -391,191 +453,50 @@ Panel {
                     Column {
                         width: parent.width * 0.32 - parent.spacing
                         height: parent.height
-
                         spacing: Style.space(10)
 
-                        Rectangle {
-                            width: parent.width
-                            height: (parent.height - 2 * parent.spacing) / 3
-
-                            radius: 10
-
-                            color:
-                                randomMouse.containsMouse
-                                    ? Style.hoverFillFor(
-                                        Color.popups.text,
-                                        Color.accent
-                                      )
-                                    : Color.popups.background
-
-                            border.width: 1
-                            border.color: Color.popups.border
-
-                            Column {
-                                anchors.centerIn: parent
-                                spacing: 4
-
-                                Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-
-                                    text: "\uedec"
-                                    color:Color.accent
-
-                                    font.pixelSize: 20
-                                }
-
-                                Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-
-                                    text: "Random"
-
-                                    color: Color.popups.text
-
-                                    font.family: root.uiFont
-                                    font.pixelSize: 13
-                                    font.bold: true
-                                }
+                        Rectangle { width: parent.width; height: (parent.height - 3 * parent.spacing) / 4; radius: 10
+                            color: profileMouse.containsMouse ? Style.hoverFillFor(Color.popups.text, Color.accent) : Color.popups.background
+                            border.width: 1; border.color: Color.popups.border
+                            Column { anchors.centerIn: parent; spacing: 4
+                                Text { anchors.horizontalCenter: parent.horizontalCenter; text: "\uf2bd"; color: Color.accent; font.family: root.uiFont; font.pixelSize: 20 }
+                                Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Profile"; color: Color.popups.text; font.family: root.uiFont; font.pixelSize: 13; font.bold: true }
                             }
-
-                            MouseArea {
-                                id: randomMouse
-
-                                anchors.fill: parent
-
-                                hoverEnabled: true
-
-                                onClicked: {
-                                    if (root.filteredPacks.length > 0) {
-                                        var randomIndex =
-                                            Math.floor(
-                                                Math.random() *
-                                                root.filteredPacks.length
-                                            )
-
-                                        omaState.play(
-                                            root.filteredPacks[randomIndex].name
-                                        )
-                                    }
-                                }
-                            }
+                            MouseArea { id: profileMouse; anchors.fill: parent; hoverEnabled: true; onClicked: root.activeView = "profile" }
                         }
 
-                        Rectangle {
-                            width: parent.width
-                            height: (parent.height - 2 * parent.spacing) / 3
-
-                            radius: 10
-
-                            color:
-                                analyticsMouse.containsMouse
-                                    ? Style.hoverFillFor(
-                                        Color.popups.text,
-                                        Color.accent
-                                      )
-                                    : Color.popups.background
-
-                            border.width: 1
-                            border.color: Color.popups.border
-
-                            Column {
-                                anchors.centerIn: parent
-                                spacing: 4
-
-                                Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-
-                                    // ⚠️ VERIFY: bar-chart glyph codepoint —
-                                    // swap for whatever your bundled Nerd
-                                    // Font actually maps if this renders
-                                    // as a blank box.
-                                    text: "\uf080"
-                                    color: Color.accent
-
-                                    font.pixelSize: 20
-                                }
-
-                                Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-
-                                    text: "Analytics"
-
-                                    color: Color.popups.text
-
-                                    font.family: root.uiFont
-                                    font.pixelSize: 13
-                                    font.bold: true
-                                }
+                        Rectangle { width: parent.width; height: (parent.height - 3 * parent.spacing) / 4; radius: 10
+                            color: statsMouse.containsMouse ? Style.hoverFillFor(Color.popups.text, Color.accent) : Color.popups.background
+                            border.width: 1; border.color: Color.popups.border
+                            Column { anchors.centerIn: parent; spacing: 4
+                                Text { anchors.horizontalCenter: parent.horizontalCenter; text: "\uf201"; color: Color.accent; font.family: root.uiFont; font.pixelSize: 20 }
+                                Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Stats"; color: Color.popups.text; font.family: root.uiFont; font.pixelSize: 13; font.bold: true }
                             }
-
-                            MouseArea {
-                                id: analyticsMouse
-
-                                anchors.fill: parent
-
-                                hoverEnabled: true
-
-onClicked: {
-    root.activeView = "analytics"
-}
-                            }
+                            MouseArea { id: statsMouse; anchors.fill: parent; hoverEnabled: true; onClicked: root.activeView = "stats" }
                         }
 
-                        Rectangle {
-                            width: parent.width
-                            height: (parent.height - 2 * parent.spacing) / 3
-
-                            radius: 10
-
-                            color:
-                                stopMouse.containsMouse
-                                    ? Style.hoverFillFor(
-                                        Color.popups.text,
-                                        Color.accent
-                                      )
-                                    : Color.popups.background
-
-                            border.width: 1
-                            border.color: Color.popups.border
-
-                            Column {
-                                anchors.centerIn: parent
-                                spacing: 4
-
-                                Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-
-                                    text: "\udb81\udd81"
-                                    color:Color.accent
-
-                                    font.pixelSize: 20
-                                }
-
-                                Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-
-                                    text: "Turn Off"
-
-                                    color: Color.popups.text
-
-                                    font.family: root.uiFont
-                                    font.pixelSize: 13
-                                    font.bold: true
-                                }
+                        Rectangle { width: parent.width; height: (parent.height - 3 * parent.spacing) / 4; radius: 10
+                            color: randomMouse.containsMouse ? Style.hoverFillFor(Color.popups.text, Color.accent) : Color.popups.background
+                            border.width: 1; border.color: Color.popups.border
+                            Column { anchors.centerIn: parent; spacing: 4
+                                Text { anchors.horizontalCenter: parent.horizontalCenter; text: "\uedec"; color: Color.accent; font.family: root.uiFont; font.pixelSize: 20 }
+                                Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Random"; color: Color.popups.text; font.family: root.uiFont; font.pixelSize: 13; font.bold: true }
                             }
+                            MouseArea { id: randomMouse; anchors.fill: parent; hoverEnabled: true; onClicked: { if (root.filteredPacks.length > 0) { const i=Math.floor(Math.random()*root.filteredPacks.length); omaState.play(root.filteredPacks[i].name) } } }
+                        }
 
-                            MouseArea {
-                                id: stopMouse
-
-                                anchors.fill: parent
-
-                                hoverEnabled: true
-
-                                onClicked: {
-                                    omaState.stop()
-                                }
+                        Rectangle { width: parent.width; height: (parent.height - 3 * parent.spacing) / 4; radius: 10
+                            color: stopMouse.containsMouse ? Style.hoverFillFor(Color.popups.text, Color.accent) : Color.popups.background
+                            border.width: 1; border.color: Color.popups.border
+                            Column { anchors.centerIn: parent; spacing: 4
+                                Text { anchors.horizontalCenter: parent.horizontalCenter; text: "\udb81\udd81"; color: Color.accent; font.family: root.uiFont; font.pixelSize: 20 }
+                                Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Turn Off"; color: Color.popups.text; font.family: root.uiFont; font.pixelSize: 13; font.bold: true }
                             }
+                            MouseArea { id: stopMouse; anchors.fill: parent; hoverEnabled: true; onClicked: omaState.stop() }
                         }
                     }
+
+                    // Close mainArea Row before volume controls.
                 }
 
                 // ─────────────────────────
@@ -711,19 +632,21 @@ onClicked: {
 
                     color: Color.muted
                     font.family: root.uiFont
-                    font.pixelSize: 12
+                    font.pixelSize: 15
+                    font.bold: true
                     elide: Text.ElideRight
                 }
 
                 // ─────────────────────────
-                // ANALYTICS
+                // PROFILE / STATS
                 // ─────────────────────────
 
                 Column {
                     id: analyticsView
 
                     width: parent.width
-                    visible: root.activeView === "analytics"
+                    visible: root.activeView === "profile" || root.activeView === "stats"
+                    height: visible ? 550 : 0
                     spacing: Style.space(10)
 
                     Row {
@@ -745,7 +668,7 @@ onClicked: {
                         }
 
                         Text {
-                            text: "Back to Sounds"
+                            text: root.activeView === "profile" ? "Back to Sounds  •  Profile" : "Back to Sounds  •  Stats"
                             color: Color.muted
                             font.family: root.uiFont
                             font.pixelSize: 13
@@ -780,128 +703,923 @@ onClicked: {
                             width: analyticsFlick.width
                             spacing: Style.space(10)
 
-                            // ── PERIOD NAVIGATION ──
-                            Row {
-                                width: parent.width
-                                height: 28
-
-                                Text {
-                                    anchors.left: parent.left
-                                    anchors.verticalCenter: parent.verticalCenter
-
-                                    text: "‹"
-                                    color: Color.accent
-                                    font.family: root.uiFont
-                                    font.pixelSize: 20
-                                    font.bold: true
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        anchors.margins: -5
-                                        onClicked: omaState.moveAnalyticsPeriod(-1, root.analyticsGraphView)
-                                    }
-                                }
-
-                                Text {
-                                    anchors.centerIn: parent
-
-                                    text: omaState.analyticsPeriodLabel(
-                                        root.analyticsGraphView
-                                    )
-
-                                    color: Color.popups.text
-                                    font.family: root.uiFont
-                                    font.pixelSize: 13
-                                    font.bold: true
-                                }
-
-                                Text {
-                                    anchors.right: parent.right
-                                    anchors.verticalCenter: parent.verticalCenter
-
-                                    text: "›"
-                                    color: Color.accent
-                                    font.family: root.uiFont
-                                    font.pixelSize: 20
-                                    font.bold: true
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        anchors.margins: -5
-                                        onClicked: omaState.moveAnalyticsPeriod(1, root.analyticsGraphView)
-                                    }
-                                }
-                            }
-
-                            // ── RANGE TABS ──
-                            Row {
-                                spacing: Style.space(14)
-
-                                Repeater {
-                                    model: ["Day", "Week", "Month"]
-
-                                    delegate: Text {
-                                        text: modelData
-                                        color:
-                                            root.analyticsGraphView === modelData.toLowerCase()
-                                                ? Color.accent
-                                                : Color.muted
-
-                                        font.family: root.uiFont
-                                        font.pixelSize: 12
-                                        font.bold:
-                                            root.analyticsGraphView === modelData.toLowerCase()
-
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            anchors.margins: -5
-                                            onClicked: {
-                                                root.analyticsGraphView = modelData.toLowerCase()
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            // ── TODAY SUMMARY ──
+                            // ── PROFILE ──
                             Column {
                                 width: parent.width
-                                spacing: 1
+                                visible: root.activeView === "profile"
+                                height: visible ? implicitHeight : 0
+                                spacing: Style.space(8)
 
                                 Text {
-                                    text: "TODAY"
+                                    text: "PROFILE"
                                     color: Color.muted
                                     font.family: root.uiFont
                                     font.pixelSize: 11
                                     font.bold: true
                                 }
 
+                                // Tier hero card
+                                Rectangle {
+                                    width: parent.width
+                                    height: 132
+                                    radius: 12
+                                    color: Color.popups.background
+                                    border.width: 1
+                                    border.color: root.tierColor(omaState.lifetimeTierIndex())
+
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        radius: parent.radius
+                                        opacity: 0.22
+                                        gradient: Gradient {
+                                            orientation: Gradient.Horizontal
+                                            GradientStop { position: 0.0; color: root.tint(root.vizPrimary, 0.32) }
+                                            GradientStop { position: 0.52; color: root.tint(root.vizSecondary, 0.18) }
+                                            GradientStop { position: 1.0; color: root.tint(root.vizTertiary, 0.12) }
+                                        }
+                                    }
+
+                                    Column {
+                                        anchors.fill: parent
+                                        anchors.margins: 12
+                                        spacing: 6
+
+                                        Row {
+                                            width: parent.width
+                                            spacing: 10
+
+                                            Rectangle {
+                                                width: 44
+                                                height: 44
+                                                radius: 12
+                                                color: Qt.rgba(root.tierColor(omaState.lifetimeTierIndex()).r, root.tierColor(omaState.lifetimeTierIndex()).g, root.tierColor(omaState.lifetimeTierIndex()).b, 0.13)
+                                                border.width: 1
+                                                border.color: root.tierColor(omaState.lifetimeTierIndex())
+
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: omaState.lifetimeTier().symbol
+                                                    color: root.tierColor(omaState.lifetimeTierIndex())
+                                                    font.family: root.uiFont
+                                                    font.pixelSize: 23
+                                                    font.bold: true
+                                                }
+                                            }
+
+                                            Column {
+                                                width: parent.width - 54
+                                                spacing: 1
+
+                                                Row {
+                                                    width: parent.width
+                                                    spacing: 7
+
+                                                    Text {
+                                                        text: omaState.lifetimeTier().name
+                                                        color: root.tierColor(omaState.lifetimeTierIndex())
+                                                        font.family: root.uiFont
+                                                        font.pixelSize: 18
+                                                        font.bold: true
+                                                        elide: Text.ElideRight
+                                                    }
+
+                                                    Text {
+                                                        text: "LV " + (omaState.lifetimeTierIndex() + 1) + "/" + omaState.typingTiers.length
+                                                        color: root.tierColor(omaState.lifetimeTierIndex())
+                                                        font.family: root.uiFont
+                                                        font.pixelSize: 9
+                                                        font.bold: true
+                                                    }
+                                                }
+
+                                                Text {
+                                                    text: omaState.lifetimeWords().toLocaleString() + " lifetime words"
+                                                    color: root.vizTertiary
+                                                    font.family: root.uiFont
+                                                    font.pixelSize: 10
+                                                }
+                                            }
+                                        }
+
+                                        Rectangle {
+                                            width: parent.width
+                                            height: 8
+                                            radius: 4
+                                            color: Qt.rgba(Color.popups.text.r, Color.popups.text.g, Color.popups.text.b, 0.07)
+
+                                            Rectangle {
+                                                width: parent.width * omaState.lifetimeTierProgress()
+                                                height: parent.height
+                                                radius: 4
+                                                color: root.tierColor(omaState.lifetimeTierIndex())
+                                            }
+                                        }
+
+                                        Row {
+                                            width: parent.width
+
+                                            Text {
+                                                width: parent.width * 0.72
+                                                text: omaState.lifetimeNextTier()
+                                                    ? omaState.lifetimeWordsToNextTier().toLocaleString() + " words to " + omaState.lifetimeNextTier().name
+                                                    : "Maximum tier reached"
+                                                color: Color.muted
+                                                font.family: root.uiFont
+                                                font.pixelSize: 9
+                                                elide: Text.ElideRight
+                                            }
+
+                                            Text {
+                                                width: parent.width * 0.28
+                                                horizontalAlignment: Text.AlignRight
+                                                text: Math.round(omaState.lifetimeTierProgress() * 100) + "%"
+                                                color: root.tierColor(omaState.lifetimeTierIndex())
+                                                font.family: root.uiFont
+                                                font.pixelSize: 10
+                                                font.bold: true
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Core lifetime numbers
+                                Row {
+                                    width: parent.width
+                                    spacing: Style.space(6)
+
+                                    Repeater {
+                                        model: [
+                                            { label: "WORDS", value: omaState.lifetimeWords().toLocaleString(), color: root.tierColor(0) },
+                                            { label: "KEYS", value: omaState.lifetimeKeyPresses().toLocaleString(), color: root.tierColor(1) },
+                                            { label: "TYPING", value: root.formatDuration(omaState.lifetimeTypingSeconds()), color: root.tierColor(2) },
+                                            { label: "STREAK", value: omaState.lifetimeLongestStreak().toLocaleString() + "d", color: root.tierColor(3) }
+                                        ]
+
+                                        delegate: Rectangle {
+                                            width: (parent.width - 3 * Style.space(6)) / 4
+                                            height: 55
+                                            radius: 9
+                                            color: root.tint(modelData.color, 0.07)
+                                            border.width: 1
+                                            border.color: root.tint(modelData.color, 0.50)
+
+                                            Column {
+                                                anchors.centerIn: parent
+                                                spacing: 1
+
+                                                Text {
+                                                    anchors.horizontalCenter: parent.horizontalCenter
+                                                    text: modelData.value
+                                                    color: modelData.color
+                                                    font.family: root.uiFont
+                                                    font.pixelSize: 12
+                                                    font.bold: true
+                                                    elide: Text.ElideRight
+                                                }
+
+                                                Text {
+                                                    anchors.horizontalCenter: parent.horizontalCenter
+                                                    text: modelData.label
+                                                    color: Color.muted
+                                                    font.family: root.uiFont
+                                                    font.pixelSize: 8
+                                                    font.bold: true
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
                                 Text {
-                                    text: omaState.todayWords().toLocaleString() + " words"
-                                    color: Color.popups.text
+                                    text: "PERSONAL RECORDS"
+                                    color: Color.muted
                                     font.family: root.uiFont
-                                    font.pixelSize: 22
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                }
+
+                                Row {
+                                    width: parent.width
+                                    spacing: Style.space(6)
+
+                                    Repeater {
+                                        model: [
+                                            { label: "BEST DAY", value: omaState.lifetimeBestDay().words.toLocaleString(), color: root.tierColor(4) },
+                                            { label: "ACTIVE DAYS", value: omaState.lifetimeActiveDays().toLocaleString(), color: root.tierColor(5) },
+                                            { label: "AVG / ACTIVE DAY", value: Math.round(omaState.lifetimeAverageWordsPerActiveDay()).toLocaleString(), color: root.tierColor(6) }
+                                        ]
+
+                                        delegate: Rectangle {
+                                            width: (parent.width - 2 * Style.space(6)) / 3
+                                            height: 54
+                                            radius: 9
+                                            color: root.tint(modelData.color, 0.06)
+                                            border.width: 1
+                                            border.color: root.tint(modelData.color, 0.44)
+
+                                            Column {
+                                                anchors.centerIn: parent
+                                                spacing: 1
+
+                                                Text {
+                                                    anchors.horizontalCenter: parent.horizontalCenter
+                                                    text: modelData.value
+                                                    color: modelData.color
+                                                    font.family: root.uiFont
+                                                    font.pixelSize: 13
+                                                    font.bold: true
+                                                }
+
+                                                Text {
+                                                    width: parent.width
+                                                    horizontalAlignment: Text.AlignHCenter
+                                                    text: modelData.label
+                                                    color: Color.muted
+                                                    font.family: root.uiFont
+                                                    font.pixelSize: 7
+                                                    font.bold: true
+                                                    elide: Text.ElideRight
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Text {
+                                    text: "ACHIEVEMENTS"
+                                    color: Color.muted
+                                    font.family: root.uiFont
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                }
+
+                                Column {
+                                    width: parent.width
+                                    spacing: 4
+
+                                    Repeater {
+                                        model: omaState.profileAchievements()
+
+                                        delegate: Rectangle {
+                                            width: parent.width
+                                            height: 38
+                                            radius: 8
+                                            color: root.tint(root.tierColor(index + 7), 0.11)
+                                            border.width: 1
+                                            border.color: root.tint(root.tierColor(index + 7), 0.52)
+
+                                            Row {
+                                                anchors.fill: parent
+                                                anchors.leftMargin: 9
+                                                anchors.rightMargin: 9
+                                                spacing: 8
+
+                                                Text {
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                    width: 20
+                                                    text: modelData.symbol
+                                                    color: root.tierColor(index + 7)
+                                                    font.family: root.uiFont
+                                                    font.pixelSize: 13
+                                                    font.bold: true
+                                                    horizontalAlignment: Text.AlignHCenter
+                                                }
+
+                                                Column {
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                    width: parent.width - 28
+                                                    spacing: 0
+
+                                                    Text {
+                                                        text: modelData.name
+                                                        color: Color.popups.text
+                                                        font.family: root.uiFont
+                                                        font.pixelSize: 9
+                                                        font.bold: true
+                                                        elide: Text.ElideRight
+                                                    }
+
+                                                    Text {
+                                                        text: modelData.detail
+                                                        color: Color.muted
+                                                        font.family: root.uiFont
+                                                        font.pixelSize: 7
+                                                        elide: Text.ElideRight
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Text {
+                                        visible: omaState.profileAchievements().length === 0
+                                        text: "No achievements unlocked yet"
+                                        color: Color.muted
+                                        font.family: root.uiFont
+                                        font.pixelSize: 10
+                                    }
+                                }
+                            }
+
+                            // STATS is a sibling of PROFILE, not a child of it.
+                            // Keeping these two views separate is important because
+                            // the PROFILE column is hidden while STATS is open.
+                            Column {
+                                width: parent.width
+                                visible: root.activeView === "stats"
+                                height: visible ? implicitHeight : 0
+                                spacing: Style.space(10)
+
+                                Text {
+                                    text: "STATS"
+                                    color: root.vizPrimary
+                                    font.family: root.uiFont
+                                    font.pixelSize: 11
                                     font.bold: true
                                 }
 
                                 Text {
-                                    readonly property real pct: omaState.wordsChangePercent()
-                                    text:
-                                        omaState.yesterdayWords() === 0
-                                            ? "No previous-day comparison"
-                                            : ((pct >= 0 ? "+" : "") +
-                                               pct.toFixed(1) +
-                                               "% from yesterday")
+                                    visible: omaState.lifetimeWords() === 0 && omaState.lifetimeKeyPresses() === 0
+                                    text: "No typing data yet — start typing while OmaVibes is active."
+                                    color: Color.muted
+                                    font.family: root.uiFont
+                                    font.pixelSize: 10
+                                    wrapMode: Text.WordWrap
+                                }
 
-                                    color:
-                                        omaState.yesterdayWords() === 0
-                                            ? Color.muted
-                                            : (pct >= 0 ? Color.accent : Color.muted)
+                                Row {
+                                    width: parent.width
+                                    spacing: Style.space(6)
 
+                                    Repeater {
+                                        model: [
+                                            { label: "WORDS", value: omaState.lifetimeWords().toLocaleString(), color: root.vizPrimary },
+                                            { label: "TYPING", value: root.formatDuration(omaState.lifetimeTypingSeconds()), color: root.vizSecondary },
+                                            { label: "KEYS", value: omaState.lifetimeKeyPresses().toLocaleString(), color: root.vizTertiary },
+                                            { label: "ACTIVE", value: omaState.lifetimeActiveDays().toLocaleString() + "d", color: root.vizQuaternary }
+                                        ]
+
+                                        delegate: Rectangle {
+                                            width: (parent.width - 3 * Style.space(6)) / 4
+                                            height: 50
+                                            radius: 9
+                                            color: root.tint(modelData.color, 0.075)
+                                            border.width: 1
+                                            border.color: root.tint(modelData.color, 0.45)
+
+                                            Column {
+                                                anchors.centerIn: parent
+                                                spacing: 1
+
+                                                Text {
+                                                    anchors.horizontalCenter: parent.horizontalCenter
+                                                    text: modelData.value
+                                                    color: modelData.color
+                                                    font.family: root.uiFont
+                                                    font.pixelSize: 12
+                                                    font.bold: true
+                                                    elide: Text.ElideRight
+                                                }
+
+                                                Text {
+                                                    anchors.horizontalCenter: parent.horizontalCenter
+                                                    text: modelData.label
+                                                    color: Color.muted
+                                                    font.family: root.uiFont
+                                                    font.pixelSize: 8
+                                                    font.bold: true
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Row {
+                                    width: parent.width
+                                    spacing: Style.space(8)
+
+                                    Rectangle {
+                                        width: (parent.width - Style.space(8)) / 2
+                                        height: 52
+                                        radius: 9
+                                        color: Color.popups.background
+                                        border.width: 1
+                                        border.color: Color.popups.border
+
+                                        Column {
+                                            anchors.centerIn: parent
+                                            spacing: 1
+
+                                            Text {
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                                text: omaState.lifetimeAverageWordsPerActiveDay().toFixed(1)
+                                                color: root.vizPrimary
+                                                font.family: root.uiFont
+                                                font.pixelSize: 14
+                                                font.bold: true
+                                            }
+
+                                            Text {
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                                text: "AVG WORDS / ACTIVE DAY"
+                                                color: Color.muted
+                                                font.family: root.uiFont
+                                                font.pixelSize: 7
+                                                font.bold: true
+                                            }
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        width: (parent.width - Style.space(8)) / 2
+                                        height: 52
+                                        radius: 9
+                                        color: Color.popups.background
+                                        border.width: 1
+                                        border.color: Color.popups.border
+
+                                        Column {
+                                            anchors.centerIn: parent
+                                            spacing: 1
+
+                                            Text {
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                                text: omaState.wordsPerTypingHour() > 0
+                                                    ? Math.round(omaState.wordsPerTypingHour()).toLocaleString()
+                                                    : "0"
+                                                color: root.vizSecondary
+                                                font.family: root.uiFont
+                                                font.pixelSize: 14
+                                                font.bold: true
+                                            }
+
+                                            Text {
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                                text: "WORDS / TYPING HOUR"
+                                                color: Color.muted
+                                                font.family: root.uiFont
+                                                font.pixelSize: 7
+                                                font.bold: true
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Text {
+                                    text: "KEYBOARD"
+                                    color: Color.muted
                                     font.family: root.uiFont
                                     font.pixelSize: 11
+                                    font.bold: true
                                 }
-                            }
+
+                                Rectangle {
+                                    id: keyboardPanel
+                                    width: parent.width
+                                    height: 150
+                                    radius: 10
+                                    color: Color.popups.background
+                                    border.width: 1
+                                    border.color: Color.popups.border
+
+                                    Column {
+                                        anchors.centerIn: parent
+                                        width: parent.width - 12
+                                        spacing: 4
+
+                                        Repeater {
+                                            model: [
+                                                ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+                                                ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
+                                                ["Z", "X", "C", "V", "B", "N", "M"]
+                                            ]
+
+                                            delegate: Row {
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                                spacing: 3
+
+                                                Repeater {
+                                                    model: modelData
+
+                                                    delegate: Rectangle {
+                                                        width: 30
+                                                        height: 24
+                                                        radius: 5
+
+                                                        property color rowColor: index === 0 ? root.vizPrimary : (index === 1 ? root.vizSecondary : root.vizTertiary)
+                                                        property real count: omaState.keyCount(modelData)
+                                                        property real maxCount:
+                                                            omaState.mostUsedKeys(1).length
+                                                                ? omaState.mostUsedKeys(1)[0].count
+                                                                : 1
+                                                        property real ratio:
+                                                            maxCount > 0
+                                                                ? Math.min(1, count / maxCount)
+                                                                : 0
+
+                                                        color: Qt.rgba(
+                                                            rowColor.r,
+                                                            rowColor.g,
+                                                            rowColor.b,
+                                                            0.04 + ratio * 0.58
+                                                        )
+                                                        border.width: 1
+                                                        border.color: Qt.rgba(
+                                                            rowColor.r,
+                                                            rowColor.g,
+                                                            rowColor.b,
+                                                            0.18 + ratio * 0.62
+                                                        )
+
+                                                        Text {
+                                                            anchors.centerIn: parent
+                                                            text: modelData
+                                                            color: Color.popups.text
+                                                            font.family: root.uiFont
+                                                            font.pixelSize: 9
+                                                            font.bold: true
+                                                        }
+
+                                                        MouseArea {
+                                                            id: keyMouse
+                                                            anchors.fill: parent
+                                                            hoverEnabled: true
+                                                        }
+
+                                                        Rectangle {
+                                                            visible: keyMouse.containsMouse
+                                                            z: 100
+                                                            width: 136
+                                                            height: 48
+                                                            radius: 7
+                                                            x: {
+                                                                const point = parent.mapToItem(keyboardPanel, 0, 0).x
+                                                                const desired = point - width - 10
+                                                                const clamped = Math.max(4, Math.min(keyboardPanel.width - width - 4, desired))
+                                                                return clamped - point
+                                                            }
+                                                            y: {
+                                                                const point = parent.mapToItem(keyboardPanel, 0, 0).y
+                                                                const desired = point - height - 8
+                                                                const clamped = Math.max(4, Math.min(keyboardPanel.height - height - 4, desired))
+                                                                return clamped - point
+                                                            }
+                                                            color: Color.popups.background
+                                                            border.width: 1
+                                                            border.color: rowColor
+
+                                                            Column {
+                                                                anchors.centerIn: parent
+                                                                spacing: 1
+
+                                                                Text {
+                                                                    anchors.horizontalCenter: parent.horizontalCenter
+                                                                    text: root.keyDisplayLabel(modelData) + "  •  " + omaState.keyCount(modelData).toLocaleString()
+                                                                    color: rowColor
+                                                                    font.family: root.uiFont
+                                                                    font.pixelSize: 9
+                                                                    font.bold: true
+                                                                }
+
+                                                                Text {
+                                                                    anchors.horizontalCenter: parent.horizontalCenter
+                                                                    text: omaState.lifetimeKeyPresses() > 0
+                                                                        ? (omaState.keyCount(modelData) / omaState.lifetimeKeyPresses() * 100).toFixed(1) + "% of all keys"
+                                                                        : "No presses yet"
+                                                                    color: Color.muted
+                                                                    font.family: root.uiFont
+                                                                    font.pixelSize: 7
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Row {
+                                    width: parent.width
+                                    spacing: Style.space(8)
+
+                                    Rectangle {
+                                        width: (parent.width - Style.space(8)) / 2
+                                        height: 52
+                                        radius: 9
+                                        color: Color.popups.background
+                                        border.width: 1
+                                        border.color: Color.popups.border
+
+                                        Column {
+                                            anchors.centerIn: parent
+                                            spacing: 1
+
+                                            Text {
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                                text: omaState.mostUsedKeys(1).length
+                                                    ? omaState.mostUsedKeys(1)[0].key
+                                                    : "—"
+                                                color: Color.accent
+                                                font.family: root.uiFont
+                                                font.pixelSize: 16
+                                                font.bold: true
+                                            }
+
+                                            Text {
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                                text: "MOST USED KEY"
+                                                color: Color.muted
+                                                font.family: root.uiFont
+                                                font.pixelSize: 7
+                                                font.bold: true
+                                            }
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        width: (parent.width - Style.space(8)) / 2
+                                        height: 52
+                                        radius: 9
+                                        color: Color.popups.background
+                                        border.width: 1
+                                        border.color: Color.popups.border
+
+                                        Column {
+                                            anchors.centerIn: parent
+                                            spacing: 1
+
+                                            Text {
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                                text: omaState.backspaceRate().toFixed(1) + "%"
+                                                color: root.vizSecondary
+                                                font.family: root.uiFont
+                                                font.pixelSize: 15
+                                                font.bold: true
+                                            }
+
+                                            Text {
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                                text: "BS RATE"
+                                                color: Color.muted
+                                                font.family: root.uiFont
+                                                font.pixelSize: 7
+                                                font.bold: true
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Text {
+                                    text: "KEY FREQUENCY"
+                                    color: root.vizTertiary
+                                    font.family: root.uiFont
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                }
+
+                                Text {
+                                    visible: omaState.lifetimeKeyPresses() <= 0
+                                    width: parent.width
+                                    text: "No key data yet — type while OmaVibes is tracking."
+                                    color: Color.muted
+                                    font.family: root.uiFont
+                                    font.pixelSize: 9
+                                    wrapMode: Text.WordWrap
+                                }
+
+                                Column {
+                                    width: parent.width
+                                    spacing: 5
+                                    visible: omaState.lifetimeKeyPresses() > 0
+
+                                    Repeater {
+                                        model: omaState.mostUsedKeys(8)
+
+                                        delegate: Row {
+                                            width: parent.width
+                                            height: 17
+                                            spacing: 6
+
+                                            Text {
+                                                width: 46
+                                                text: root.keyDisplayLabel(modelData.key)
+                                                color: root.vizColor(index)
+                                                font.family: root.uiFont
+                                                font.pixelSize: 10
+                                                font.bold: true
+                                            }
+
+                                            Rectangle {
+                                                width: parent.width - 116
+                                                height: 9
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                radius: 4
+                                                color: Qt.rgba(
+                                                    Color.popups.text.r,
+                                                    Color.popups.text.g,
+                                                    Color.popups.text.b,
+                                                    0.07
+                                                )
+
+                                                Rectangle {
+                                                    width: parent.width * (
+                                                        modelData.count /
+                                                        Math.max(
+                                                            1,
+                                                            omaState.mostUsedKeys(1).length
+                                                                ? omaState.mostUsedKeys(1)[0].count
+                                                                : 1
+                                                        )
+                                                    )
+                                                    height: parent.height
+                                                    radius: 4
+                                                    color: root.vizColor(index)
+                                                }
+                                            }
+
+                                            Text {
+                                                width: 62
+                                                horizontalAlignment: Text.AlignRight
+                                                text: Number(modelData.count).toLocaleString()
+                                                color: Color.popups.text
+                                                font.family: root.uiFont
+                                                font.pixelSize: 8
+                                                font.bold: true
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Text {
+                                    text: "KEY FREQUENCY MAP"
+                                    color: root.vizTertiary
+                                    font.family: root.uiFont
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                }
+
+                                Text {
+                                    visible: omaState.lifetimeKeyPresses() <= 0
+                                    width: parent.width
+                                    text: "No key data yet — type while OmaVibes is tracking."
+                                    color: Color.muted
+                                    font.family: root.uiFont
+                                    font.pixelSize: 9
+                                    wrapMode: Text.WordWrap
+                                }
+
+                                Rectangle {
+                                    id: keyScatterChart
+                                    visible: omaState.lifetimeKeyPresses() > 0
+                                    property var points: omaState.mostUsedKeys(40)
+                                    property int pointCount: points.length
+                                    width: parent.width
+                                    height: 190
+                                    radius: 10
+                                    color: Color.popups.background
+                                    border.width: 1
+                                    border.color: Color.popups.border
+
+                                    Text {
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: 8
+                                        anchors.top: parent.top
+                                        anchors.topMargin: 7
+                                        text: "presses"
+                                        color: Color.muted
+                                        font.family: root.uiFont
+                                        font.pixelSize: 7
+                                    }
+
+                                    Text {
+                                        anchors.right: parent.right
+                                        anchors.rightMargin: 8
+                                        anchors.bottom: parent.bottom
+                                        anchors.bottomMargin: 7
+                                        text: "least used ← most used"
+                                        color: Color.muted
+                                        font.family: root.uiFont
+                                        font.pixelSize: 7
+                                    }
+
+                                    Rectangle {
+                                        id: keyScatterPlotArea
+                                        x: 10
+                                        y: 24
+                                        width: parent.width - 20
+                                        height: parent.height - 48
+                                        color: "transparent"
+
+                                        Rectangle {
+                                            anchors.left: parent.left
+                                            anchors.right: parent.right
+                                            anchors.bottom: parent.bottom
+                                            height: 1
+                                            color: root.tint(Color.popups.text, 0.16)
+                                        }
+
+                                        Repeater {
+                                            model: keyScatterChart.points
+
+                                            delegate: Rectangle {
+                                                property real topCount: omaState.mostUsedKeys(1).length
+                                                    ? omaState.mostUsedKeys(1)[0].count
+                                                    : 1
+                                                property real fraction: topCount > 0
+                                                    ? Number(modelData.count) / topCount
+                                                    : 0
+                                                property color pointColor: root.vizColor(index)
+
+                                                width: 12 + Math.min(10, fraction * 10)
+                                                height: width
+                                                radius: width / 2
+                                                color: pointColor
+                                                border.width: 1
+                                                border.color: root.tint(pointColor, 0.82)
+                                                // Most-used keys are on the RIGHT; least-used on the LEFT.
+                                                x: keyScatterChart.pointCount <= 1
+                                                    ? (parent.width - width) / 2
+                                                    : 6 + ((keyScatterChart.pointCount - 1 - index) / (keyScatterChart.pointCount - 1)) * Math.max(1, parent.width - 12 - width)
+                                                y: Math.max(5, parent.height - 8 - (fraction * (parent.height - width - 10)))
+                                                z: keyPointMouse.containsMouse ? 10 : 1
+
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: root.keyDisplayLabel(modelData.key)
+                                                    color: Color.popups.background
+                                                    font.family: root.uiFont
+                                                    font.pixelSize: width >= 18 ? 6 : 5
+                                                    font.bold: true
+                                                    elide: Text.ElideRight
+                                                }
+
+                                                MouseArea {
+                                                    id: keyPointMouse
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                }
+
+                                                Rectangle {
+                                                    visible: keyPointMouse.containsMouse
+                                                    width: 150
+                                                    height: 49
+                                                    radius: 7
+                                                    // Keep the tooltip inside the scatter plot area.
+                                                    // Prefer the left/above side, then clamp to the plot bounds.
+                                                    x: {
+                                                        const pointX = parent.x
+                                                        const desired = pointX - width - 10
+                                                        const clamped = Math.max(4, Math.min(keyScatterPlotArea.width - width - 4, desired))
+                                                        return clamped - pointX
+                                                    }
+                                                    y: {
+                                                        const pointY = parent.y
+                                                        const desired = pointY - height - 8
+                                                        const clamped = Math.max(4, Math.min(keyScatterPlotArea.height - height - 4, desired))
+                                                        return clamped - pointY
+                                                    }
+                                                    color: Color.popups.background
+                                                    border.width: 1
+                                                    border.color: pointColor
+                                                    z: 50
+
+                                                    Column {
+                                                        anchors.centerIn: parent
+                                                        spacing: 1
+
+                                                        Text {
+                                                            anchors.horizontalCenter: parent.horizontalCenter
+                                                            text: root.keyDisplayLabel(modelData.key)
+                                                            color: pointColor
+                                                            font.family: root.uiFont
+                                                            font.pixelSize: 9
+                                                            font.bold: true
+                                                        }
+
+                                                        Text {
+                                                            anchors.horizontalCenter: parent.horizontalCenter
+                                                            text: Number(modelData.count).toLocaleString() + " presses"
+                                                            color: Color.popups.text
+                                                            font.family: root.uiFont
+                                                            font.pixelSize: 8
+                                                        }
+
+                                                        Text {
+                                                            anchors.horizontalCenter: parent.horizontalCenter
+                                                            text: omaState.lifetimeKeyPresses() > 0
+                                                                ? (Number(modelData.count) / omaState.lifetimeKeyPresses() * 100).toFixed(1) + "% of all keys"
+                                                                : ""
+                                                            color: Color.muted
+                                                            font.family: root.uiFont
+                                                            font.pixelSize: 7
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
 
                             Rectangle {
                                 width: parent.width
@@ -1032,8 +1750,20 @@ onClicked: {
                                                     color: Color.popups.background
                                                     border.width: 1
                                                     border.color: Color.popups.border
-                                                    x: Math.max(0, Math.min(parent.width - width, (parent.width - width) / 2))
-                                                    y: 0
+                                                    x: {
+                                                        const cursorX = wordsHover.mapToItem(wordsChart, wordsHover.mouseX, 0).x
+                                                        const itemX = parent.mapToItem(wordsChart, 0, 0).x
+                                                        const desired = cursorX - width - 10
+                                                        const clamped = Math.max(4, Math.min(wordsChart.width - width - 4, desired))
+                                                        return clamped - itemX
+                                                    }
+                                                    y: {
+                                                        const cursorY = wordsHover.mapToItem(wordsChart, 0, wordsHover.mouseY).y
+                                                        const itemY = parent.mapToItem(wordsChart, 0, 0).y
+                                                        const desired = cursorY - height - 8
+                                                        const clamped = Math.max(4, Math.min(wordsChart.height - height - 4, desired))
+                                                        return clamped - itemY
+                                                    }
 
                                                     Text {
                                                         id: wordsTooltipText
@@ -1572,8 +2302,20 @@ onClicked: {
                                                     color: Color.popups.background
                                                     border.width: 1
                                                     border.color: Color.popups.border
-                                                    x: Math.max(0, Math.min(parent.width - width, (parent.width - width) / 2))
-                                                    y: 0
+                                                    x: {
+                                                        const cursorX = activityHover.mapToItem(activityChart, activityHover.mouseX, 0).x
+                                                        const itemX = parent.mapToItem(activityChart, 0, 0).x
+                                                        const desired = cursorX - width - 10
+                                                        const clamped = Math.max(4, Math.min(activityChart.width - width - 4, desired))
+                                                        return clamped - itemX
+                                                    }
+                                                    y: {
+                                                        const cursorY = activityHover.mapToItem(activityChart, 0, activityHover.mouseY).y
+                                                        const itemY = parent.mapToItem(activityChart, 0, 0).y
+                                                        const desired = cursorY - height - 8
+                                                        const clamped = Math.max(4, Math.min(activityChart.height - height - 4, desired))
+                                                        return clamped - itemY
+                                                    }
 
                                                     Text {
                                                         id: activityTooltipText
@@ -1740,14 +2482,20 @@ onClicked: {
                                                             color: Color.popups.background
                                                             border.width: 1
                                                             border.color: root.vizSecondary
-                                                            x: Math.max(
-                                                                0,
-                                                                Math.min(
-                                                                    heatmapGrid.width - width,
-                                                                    (parent.x + parent.width / 2) - width / 2
-                                                                )
-                                                            )
-                                                            y: -38
+                                                            x: {
+                                                                const cursorX = heatmapHover.mapToItem(heatmapGrid, heatmapHover.mouseX, 0).x
+                                                                const itemX = parent.mapToItem(heatmapGrid, 0, 0).x
+                                                                const desired = cursorX - width - 10
+                                                                const clamped = Math.max(4, Math.min(heatmapGrid.width - width - 4, desired))
+                                                                return clamped - itemX
+                                                            }
+                                                            y: {
+                                                                const cursorY = heatmapHover.mapToItem(heatmapGrid, 0, heatmapHover.mouseY).y
+                                                                const itemY = parent.mapToItem(heatmapGrid, 0, 0).y
+                                                                const desired = cursorY - height - 8
+                                                                const clamped = Math.max(4, Math.min(heatmapGrid.height - height - 4, desired))
+                                                                return clamped - itemY
+                                                            }
 
                                                             Text {
                                                                 id: heatmapTooltipText
@@ -1883,7 +2631,7 @@ onClicked: {
                                         Text {
                                             anchors.bottom: parent.bottom
                                             text: consistencySection.stats.bestDayLabel + " · " + consistencySection.stats.bestDayWords
-                                            color: Color.accent
+                                            color: root.vizTertiary
                                             font.family: root.uiFont
                                             font.pixelSize: 13
                                             font.bold: true
@@ -1924,11 +2672,11 @@ onClicked: {
                                         anchors.verticalCenter: parent.verticalCenter
 
                                         border.width: 1
-                                        border.color: Color.accent
+                                        border.color: root.vizPrimary
 
                                         color:
                                             omaState.trackingMode === "onlyWhenSound"
-                                                ? Color.accent
+                                                ? root.vizPrimary
                                                 : "transparent"
                                     }
 
@@ -1963,11 +2711,11 @@ onClicked: {
                                         anchors.verticalCenter: parent.verticalCenter
 
                                         border.width: 1
-                                        border.color: Color.accent
+                                        border.color: root.vizPrimary
 
                                         color:
                                             omaState.trackingMode === "always"
-                                                ? Color.accent
+                                                ? root.vizSecondary
                                                 : "transparent"
                                     }
 
@@ -2007,6 +2755,8 @@ onClicked: {
                         }
                     }
                 }
+
+                             }
 
                 Connections {
                     target: omaState

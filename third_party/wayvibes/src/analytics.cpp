@@ -25,6 +25,12 @@ struct ParsedData {
   std::map<std::string, std::uint64_t> dailyTypingSeconds;
   std::map<std::string, std::uint64_t> dailyTrackedSeconds;
   std::string trackingMode = "onlyWhenSound";
+
+  // Lifetime aggregate key-press counts only, keyed by a stable
+  // physical-key label (e.g. "A", "SPACE", "BACKSPACE"). Never
+  // per-day, never ordered, never timestamped. Absent in files
+  // written before this field existed; treated as empty on load.
+  std::map<std::string, std::uint64_t> keyCounts;
 };
 
 std::string jsonEscape(const std::string &value) {
@@ -266,6 +272,13 @@ ParsedData loadData(const std::string &path) {
   data.dailyTrackedSeconds = parseNumberObject(
       extractObject(json, "dailyTrackedSeconds"));
 
+  // Older analytics files simply won't contain this key; extractObject
+  // returns an empty string in that case and parseNumberObject returns
+  // an empty map, which is exactly the desired backward-compatible
+  // default (zero counts for every key).
+  data.keyCounts = parseNumberObject(
+      extractObject(json, "keyCounts"));
+
   const std::string mode =
       parseStringValue(json, "trackingMode", data.trackingMode);
 
@@ -305,6 +318,8 @@ std::string serializeData(const ParsedData &data) {
       << serializeNumberObject(data.dailyTypingSeconds) << ",";
   out << "\"dailyTrackedSeconds\":"
       << serializeNumberObject(data.dailyTrackedSeconds) << ",";
+  out << "\"keyCounts\":"
+      << serializeNumberObject(data.keyCounts) << ",";
   out << "\"trackingMode\":\""
       << jsonEscape(data.trackingMode) << "\"";
   out << "}";
@@ -406,6 +421,109 @@ bool isWordBoundary(unsigned int code) {
 
 bool isWordBackspace(unsigned int code) {
   return code == KEY_BACKSPACE;
+}
+
+// Maps a Linux input-event key code to a stable, layout-independent
+// physical-key label for aggregate counting only. This is deliberately
+// NOT a character/text conversion: KEY_A always maps to "A" regardless
+// of keyboard layout, and there is no way to recover typed text, word
+// order, or timing from the resulting counters.
+std::string physicalKeyLabel(unsigned int code) {
+  if (code >= KEY_A && code <= KEY_Z) {
+    static const char *letters =
+        "QWERTYUIOPASDFGHJKLZXCVBNM";
+    // KEY_A..KEY_Z are not contiguous in alphabetical order in
+    // linux/input-event-codes.h, so map each one explicitly instead
+    // of relying on arithmetic offsets.
+    switch (code) {
+      case KEY_A: return "A";
+      case KEY_B: return "B";
+      case KEY_C: return "C";
+      case KEY_D: return "D";
+      case KEY_E: return "E";
+      case KEY_F: return "F";
+      case KEY_G: return "G";
+      case KEY_H: return "H";
+      case KEY_I: return "I";
+      case KEY_J: return "J";
+      case KEY_K: return "K";
+      case KEY_L: return "L";
+      case KEY_M: return "M";
+      case KEY_N: return "N";
+      case KEY_O: return "O";
+      case KEY_P: return "P";
+      case KEY_Q: return "Q";
+      case KEY_R: return "R";
+      case KEY_S: return "S";
+      case KEY_T: return "T";
+      case KEY_U: return "U";
+      case KEY_V: return "V";
+      case KEY_W: return "W";
+      case KEY_X: return "X";
+      case KEY_Y: return "Y";
+      case KEY_Z: return "Z";
+      default: break;
+    }
+    (void)letters;
+  }
+
+  switch (code) {
+    case KEY_1: return "1";
+    case KEY_2: return "2";
+    case KEY_3: return "3";
+    case KEY_4: return "4";
+    case KEY_5: return "5";
+    case KEY_6: return "6";
+    case KEY_7: return "7";
+    case KEY_8: return "8";
+    case KEY_9: return "9";
+    case KEY_0: return "0";
+
+    case KEY_SPACE: return "SPACE";
+    case KEY_BACKSPACE: return "BACKSPACE";
+    case KEY_ENTER: return "ENTER";
+    case KEY_KPENTER: return "ENTER";
+    case KEY_TAB: return "TAB";
+    case KEY_ESC: return "ESC";
+
+    case KEY_LEFTSHIFT: return "SHIFT";
+    case KEY_RIGHTSHIFT: return "SHIFT";
+    case KEY_LEFTCTRL: return "CTRL";
+    case KEY_RIGHTCTRL: return "CTRL";
+    case KEY_LEFTALT: return "ALT";
+    case KEY_RIGHTALT: return "ALT";
+    case KEY_LEFTMETA: return "META";
+    case KEY_RIGHTMETA: return "META";
+    case KEY_CAPSLOCK: return "CAPSLOCK";
+
+    case KEY_MINUS: return "MINUS";
+    case KEY_EQUAL: return "EQUAL";
+    case KEY_LEFTBRACE: return "LEFTBRACE";
+    case KEY_RIGHTBRACE: return "RIGHTBRACE";
+    case KEY_BACKSLASH: return "BACKSLASH";
+    case KEY_SEMICOLON: return "SEMICOLON";
+    case KEY_APOSTROPHE: return "APOSTROPHE";
+    case KEY_GRAVE: return "GRAVE";
+    case KEY_COMMA: return "COMMA";
+    case KEY_DOT: return "DOT";
+    case KEY_SLASH: return "SLASH";
+
+    case KEY_UP: return "UP";
+    case KEY_DOWN: return "DOWN";
+    case KEY_LEFT: return "LEFT";
+    case KEY_RIGHT: return "RIGHT";
+    case KEY_DELETE: return "DELETE";
+    case KEY_HOME: return "HOME";
+    case KEY_END: return "END";
+    case KEY_PAGEUP: return "PAGEUP";
+    case KEY_PAGEDOWN: return "PAGEDOWN";
+
+    default:
+      // Bucket everything else (function keys, media keys, numpad,
+      // etc.) into a single label rather than an ever-growing set of
+      // per-code entries. Still just a count, never text.
+      return "OTHER";
+  }
 }
 
 } // namespace
@@ -589,6 +707,12 @@ void AnalyticsTracker::recordKeyPress(unsigned int keyCode) {
     ++impl_->currentWordLength;
   }
 
+  // Aggregate-only key counting. Only a running integer per physical
+  // key label is incremented — no text, no key sequence, no per-key
+  // timestamp is stored anywhere.
+  impl_->data.keyCounts[physicalKeyLabel(keyCode)] += 1;
+  impl_->dirty = true;
+
   impl_->hasPreviousKey = true;
   impl_->previousKeyEpoch = now;
 
@@ -682,4 +806,18 @@ std::uint64_t AnalyticsTracker::trackedSecondsToday() const {
   return it == impl_->data.dailyTrackedSeconds.end()
              ? 0
              : it->second;
+}
+
+std::uint64_t AnalyticsTracker::totalKeyPresses() const {
+  std::uint64_t total = 0;
+  for (const auto &[label, count] : impl_->data.keyCounts) {
+    total += count;
+  }
+  return total;
+}
+
+std::uint64_t AnalyticsTracker::keyPressCount(
+    const std::string &keyLabel) const {
+  const auto it = impl_->data.keyCounts.find(keyLabel);
+  return it == impl_->data.keyCounts.end() ? 0 : it->second;
 }

@@ -49,27 +49,17 @@ BarWidget {
 
     onBarChanged: injectPanel()
 
-Loader {
-    id: panelLoader
-    active: true
-    source: Qt.resolvedUrl("Panel.qml")
-    visible: false
+    Loader {
+        id: panelLoader
+        active: true
+        source: Qt.resolvedUrl("Panel.qml")
+        visible: false
 
-    onLoaded: {
-        console.log("OMAVIBES PANEL LOADED")
-        root.injectPanel()
-        Qt.callLater(root.injectPanel)
+        onLoaded: {
+            root.injectPanel()
+            Qt.callLater(root.injectPanel)
+        }
     }
-
-    onStatusChanged: {
-        console.log(
-            "OMAVIBES LOADER STATUS:",
-            panelLoader.status,
-            "SOURCE:",
-            panelLoader.source
-        )
-    }
-}
 
     WidgetButton {
         id: button
@@ -81,13 +71,9 @@ Loader {
         text: "⌨"
         tooltipText: "OmaVibes"
 
-onPressed: function(buttonCode) {
-    console.log("OMAVIBES CLICK:", buttonCode)
-    if (buttonCode === Qt.LeftButton) {
-        console.log("OMAVIBES PANEL ITEM:", panelLoader.item)
-        root.toggle()
-        console.log("OMAVIBES TOGGLE CALLED")
-    }
-}
+        onPressed: function(buttonCode) {
+            if (buttonCode === Qt.LeftButton)
+                root.toggle()
+        }
     }
 }

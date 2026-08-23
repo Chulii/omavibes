@@ -47,6 +47,11 @@ public:
   std::uint64_t idleSecondsToday() const;
   std::uint64_t trackedSecondsToday() const;
 
+  // Aggregate key-press counters only. No typed text, sequences, or
+  // per-key timestamps are stored.
+  std::uint64_t totalKeyPresses() const;
+  std::uint64_t keyPressCount(const std::string &keyLabel) const;
+
 private:
   struct DailyStats {
     std::uint64_t words = 0;

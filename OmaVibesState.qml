@@ -202,6 +202,8 @@ QtObject {
     property var dailyWords: ({})
     property var dailyTypingSeconds: ({})
     property var dailyTrackedSeconds: ({})
+    property var keyCounts: ({})
+    property double totalKeyPresses: 0
 
     // onlyWhenSound = track while a soundpack is playing
     // always         = track whenever OmaVibes is loaded
@@ -307,6 +309,243 @@ QtObject {
 
     function todayWords() {
         return wordsOn(todayKey())
+    }
+
+    // Lifetime progression. These values are derived from the existing
+    // daily aggregate data; no new persistent fields are required.
+    // 25 lifetime word tiers. The progression is intentionally front-loaded
+    // so early users get frequent unlocks, then spaces out for long-term play.
+    readonly property var typingTiers: [
+        { min: 0,        name: "Dust",               symbol: "◌" },
+        { min: 500,      name: "Ember",              symbol: "◆" },
+        { min: 1000,     name: "Twig",               symbol: "✦" },
+        { min: 2000,     name: "Puddle",             symbol: "◇" },
+        { min: 4000,     name: "Bronze I",           symbol: "●" },
+        { min: 6000,     name: "Bronze II",          symbol: "●" },
+        { min: 8000,     name: "Copper I",           symbol: "⬢" },
+        { min: 10000,    name: "Iron I",             symbol: "⚙" },
+        { min: 15000,    name: "Obsidian",            symbol: "⬟" },
+        { min: 25000,    name: "Scout",               symbol: "⌖" },
+        { min: 30000,    name: "Silver I",            symbol: "◇" },
+        { min: 50000,    name: "Gold I",              symbol: "✪" },
+        { min: 75000,    name: "Platinum II",         symbol: "◈" },
+        { min: 100000,   name: "Emerald III",         symbol: "◆" },
+        { min: 150000,   name: "Crystal I",           symbol: "❖" },
+        { min: 250000,   name: "Warden",              symbol: "⬢" },
+        { min: 400000,   name: "Diamond I",           symbol: "◇" },
+        { min: 600000,   name: "Ruby III",            symbol: "◆" },
+        { min: 1000000,  name: "Sapphire IV",         symbol: "◆" },
+        { min: 1500000,  name: "Blademaster",         symbol: "✦" },
+        { min: 2500000,  name: "Arcane Ranger",       symbol: "✧" },
+        { min: 5000000,  name: "Grandmaster I",       symbol: "✪" },
+        { min: 10000000, name: "Legend III",           symbol: "★" },
+        { min: 15000000, name: "Ace Diamond",          symbol: "◇" },
+        { min: 25000000, name: "Conqueror Platinum",  symbol: "❖" }
+    ]
+
+    function lifetimeWords() {
+        let total = 0
+        for (const key in dailyWords)
+            total += Number(dailyWords[key] || 0)
+        return total
+    }
+
+    function lifetimeTypingSeconds() {
+        let total = 0
+        for (const key in dailyTypingSeconds)
+            total += Number(dailyTypingSeconds[key] || 0)
+        return total
+    }
+
+    function lifetimeTrackedSeconds() {
+        let total = 0
+        for (const key in dailyTrackedSeconds)
+            total += Number(dailyTrackedSeconds[key] || 0)
+        return total
+    }
+
+    function lifetimeActiveDays() {
+        let total = 0
+        for (const key in dailyWords)
+            if (Number(dailyWords[key] || 0) > 0) ++total
+        return total
+    }
+
+    function lifetimeBestDay() {
+        let bestWords = 0
+        let bestDate = ""
+        for (const key in dailyWords) {
+            const words = Number(dailyWords[key] || 0)
+            if (words > bestWords) {
+                bestWords = words
+                bestDate = key
+            }
+        }
+        return { words: bestWords, date: bestDate }
+    }
+
+    function lifetimeLongestStreak() {
+        const keys = Object.keys(dailyWords).filter(
+            key => Number(dailyWords[key] || 0) > 0
+        ).sort()
+
+        if (keys.length === 0) return 0
+
+        let best = 1
+        let current = 1
+        for (let i = 1; i < keys.length; ++i) {
+            const prev = parseDateKey(keys[i - 1])
+            const cur = parseDateKey(keys[i])
+            const diff = Math.round((dayStart(cur) - dayStart(prev)) / 86400000)
+            if (diff === 1) {
+                ++current
+                best = Math.max(best, current)
+            } else {
+                current = 1
+            }
+        }
+        return best
+    }
+
+    function lifetimeTier() {
+        const words = lifetimeWords()
+        let current = typingTiers[0]
+        for (let i = 0; i < typingTiers.length; ++i) {
+            if (words >= typingTiers[i].min)
+                current = typingTiers[i]
+            else
+                break
+        }
+        return current
+    }
+
+    function lifetimeTierIndex() {
+        const words = lifetimeWords()
+        let index = 0
+        for (let i = 0; i < typingTiers.length; ++i) {
+            if (words >= typingTiers[i].min) index = i
+            else break
+        }
+        return index
+    }
+
+    function lifetimeNextTier() {
+        const index = lifetimeTierIndex()
+        return index + 1 < typingTiers.length
+            ? typingTiers[index + 1]
+            : null
+    }
+
+    function lifetimeTierProgress() {
+        const words = lifetimeWords()
+        const index = lifetimeTierIndex()
+        const current = typingTiers[index]
+        const next = lifetimeNextTier()
+        if (!next) return 1
+        const span = next.min - current.min
+        if (span <= 0) return 1
+        return Math.max(0, Math.min(1, (words - current.min) / span))
+    }
+
+    function lifetimeWordsToNextTier() {
+        const next = lifetimeNextTier()
+        return next ? Math.max(0, next.min - lifetimeWords()) : 0
+    }
+
+    function profileAchievements() {
+        const words = lifetimeWords()
+        const best = lifetimeBestDay().words
+        const streak = lifetimeLongestStreak()
+        const keys = lifetimeKeyPresses()
+
+        return [
+            { name: "First 100", detail: "100 lifetime words", symbol: "✓", unlocked: words >= 100 },
+            { name: "First 1K", detail: "1,000 lifetime words", symbol: "✦", unlocked: words >= 1000 },
+            { name: "10K Club", detail: "10,000 lifetime words", symbol: "◆", unlocked: words >= 10000 },
+            { name: "100K Club", detail: "100,000 lifetime words", symbol: "◇", unlocked: words >= 100000 },
+            { name: "Million Words", detail: "1,000,000 lifetime words", symbol: "★", unlocked: words >= 1000000 },
+            { name: "Keysmith", detail: "100,000 key presses", symbol: "⚙", unlocked: keys >= 100000 },
+            { name: "Key Hoarder", detail: "1,000,000 key presses", symbol: "⬢", unlocked: keys >= 1000000 },
+            { name: "Big Day", detail: "5,000 words in one day", symbol: "▲", unlocked: best >= 5000 },
+            { name: "Monster Day", detail: "10,000 words in one day", symbol: "◆", unlocked: best >= 10000 },
+            { name: "Week Warrior", detail: "7 day typing streak", symbol: "↗", unlocked: streak >= 7 },
+            { name: "Month Warrior", detail: "30 day typing streak", symbol: "◈", unlocked: streak >= 30 },
+            { name: "Century Streak", detail: "100 day typing streak", symbol: "∞", unlocked: streak >= 100 }
+        ].filter(function(item) { return item.unlocked })
+    }
+
+    // Lifetime key analytics. Only aggregate counts are used; no text or
+    // key sequences are reconstructed here.
+    function lifetimeKeyPresses() {
+        let total = 0
+        for (const key in keyCounts)
+            total += Number(keyCounts[key] || 0)
+        return total
+    }
+
+    function keyCount(keyLabel) {
+        return Number(keyCounts[String(keyLabel).toUpperCase()] || 0)
+    }
+
+    function mostUsedKeys(limit) {
+        const result = []
+        for (const key in keyCounts) {
+            const count = Number(keyCounts[key] || 0)
+            if (count > 0) result.push({ key: key, count: count })
+        }
+        result.sort(function(a, b) {
+            if (b.count !== a.count) return b.count - a.count
+            return a.key.localeCompare(b.key)
+        })
+        return result.slice(0, Math.max(0, Number(limit) || 0))
+    }
+
+    function keyCategoryCounts() {
+        let letters = 0
+        let digits = 0
+        let special = 0
+
+        for (const key in keyCounts) {
+            const count = Number(keyCounts[key] || 0)
+            if (/^[A-Z]$/.test(key)) letters += count
+            else if (/^[0-9]$/.test(key)) digits += count
+            else special += count
+        }
+
+        return { letters: letters, digits: digits, special: special }
+    }
+
+    function backspaceRate() {
+        const total = lifetimeKeyPresses()
+        return total > 0 ? keyCount("BACKSPACE") / total * 100 : 0
+    }
+
+    function keyMixInsight() {
+        const total = lifetimeKeyPresses()
+        if (total <= 0) return { label: "No key data yet", percent: 0 }
+
+        const mix = keyCategoryCounts()
+        const entries = [
+            { label: "Letters", value: mix.letters },
+            { label: "Digits", value: mix.digits },
+            { label: "Special", value: mix.special }
+        ]
+
+        entries.sort(function(a, b) { return b.value - a.value })
+        return {
+            label: entries[0].label,
+            percent: entries[0].value / total * 100
+        }
+    }
+
+    function lifetimeAverageWordsPerActiveDay() {
+        const days = lifetimeActiveDays()
+        return days > 0 ? lifetimeWords() / days : 0
+    }
+
+    function wordsPerTypingHour() {
+        const seconds = lifetimeTypingSeconds()
+        return seconds > 0 ? lifetimeWords() / (seconds / 3600) : 0
     }
 
     // One playful remark for today only. The bucket changes automatically
@@ -699,6 +938,10 @@ QtObject {
                     if (data.dailyWords) state.dailyWords = data.dailyWords
                     if (data.dailyTypingSeconds) state.dailyTypingSeconds = data.dailyTypingSeconds
                     if (data.dailyTrackedSeconds) state.dailyTrackedSeconds = data.dailyTrackedSeconds
+                    if (data.keyCounts) state.keyCounts = data.keyCounts
+                    state.totalKeyPresses = Number(data.totalKeyPresses || 0)
+                    if (!state.totalKeyPresses)
+                        state.totalKeyPresses = state.lifetimeKeyPresses()
                     if (!state.trackingModePreferenceLoaded &&
                         (data.trackingMode === "onlyWhenSound" || data.trackingMode === "always")) {
                         state.trackingMode = data.trackingMode
