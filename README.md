@@ -1,46 +1,56 @@
 # OmaVibes: Type with Cozy Sound
-Mechanical keyboard sound effects with 25 different soundpacks, search, random playback, and volume control for the Omarchy bar.
+OmaVibes gives you cozy typing sound effects with over 40+ sounds, gamified typing stats with ranks, detailed analytics, random playback, and volume control for the Omarchy bar.
 
 ---
 
-<img width="1536" height="1024" alt="preview" src="https://github.com/user-attachments/assets/ce817e0f-87d0-48ce-8689-35115b2382ec" />
-<img width="1899" height="1080" alt="preview1" src="https://github.com/user-attachments/assets/288f805b-8436-4ba8-bb2f-b9d572ca87c1" />
 
+https://github.com/user-attachments/assets/1af267b1-29c0-4423-8530-0c5b8d533819
 
-https://github.com/user-attachments/assets/c6a59ad7-b5af-4149-bff5-a7361f42ecd2
-
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/83c98e4f-1c3f-4a95-ab12-eb784362f163" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/d51305f9-45ac-4624-a16e-c33c190d1334" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/3b836e01-9d52-4ed9-8071-9ede513d5c49" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/936556ba-b6a0-4aa0-b010-20ef3193cce9" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/f3522a35-2158-40ef-a1a7-570f9ba1a2cd" />
 
 `Note: Enable sound in the above preview video`
 
 ---
 > I didn't originally plan on releasing this.
 >
-> I created OmaVibes because I wanted those thocky, creamy mechanical keyboard sounds while typing, but I couldn't afford a mechanical keyboard sound setup. So I decided to build my own solution.
+> I created OmaVibes because I wanted cozy typing sounds while typing, but I couldn't afford a mechanical keyboard sound setup. So I decided to build my own solution.
 >
-> OmaVibes originally started with a Walker-based implementation, and eventually evolved into an Omarchy plugin with a proper bar interface, soundpack browser, search, random playback, per-pack volume control, and persistent settings.
+> OmaVibes originally started with a Walker-based implementation, and eventually evolved into an Omarchy plugin with a proper bar interface, soundpack browser, search, random playback, per-pack volume control, persistent settings, and built-in typing stats and analytics.
 >
 > Hopefully you enjoy it.
 
 
 ## What is OmaVibes?
-OmaVibes is an Omarchy bar widget that lets you play mechanical keyboard sound effects while typing.
+OmaVibes is an Omarchy bar widget that plays cozy typing sound effects whenever you type.
 
-It uses **wayvibes**, a keyboard sound runtime that plays sounds in response to keyboard input. The required runtime is bundled with OmaVibes, so no separate wayvibes installation is required.
+It comes with over 40+ sounds across the bundled soundpacks, along with search, random playback, volume control, a typing profile, gamified ranks, achievements, and detailed typing analytics.
+
+OmaVibes uses **wayvibes** as its typing sound runtime. It listens for keyboard input and plays the selected sound effects while you type. The required runtime is bundled with OmaVibes, so no separate `wayvibes` installation is required.
 
 ---
 ## Features
 
 * **Omarchy bar integration** — Open OmaVibes directly from the top bar.
-* **25 soundpacks** — A collection of mechanical keyboard sound effects.
-* **Soundpack browser** — Browse the available keyboard sounds from one panel.
+* **40+ typing sounds** — A collection of cozy typing sound effects across the bundled soundpacks.
+* **Soundpack browser** — Browse the available soundpacks from one panel.
 * **Search** — Filter soundpacks instantly by name.
 * **One-click playback** — Select a soundpack to start playing it immediately.
 * **Random playback** — Pick a random soundpack from the available collection.
-* **Turn Off** — Stop the currently playing keyboard sounds.
+* **Turn Off** — Stop the currently playing typing sounds.
 * **Volume control** — Adjust the volume from 1 to 10.
 * **Per-pack volume** — Each soundpack remembers its own volume setting.
 * **Persistent settings** — Soundpack and volume settings are preserved across shell restarts.
-* **Theme-aware interface** — Uses Omarchy/Quickshell styling and the active bar font.
+* **Profile** — See your lifetime typing progress, current rank, progress toward the next rank, personal records, and completed achievements.
+* **Gamified ranks** — Lifetime words typed determine your rank, with increasingly difficult tiers to climb.
+* **Achievements** — Unlock typing milestones based on lifetime words, key presses, typing days, and streaks.
+* **Detailed analytics** — Explore daily, weekly, monthly, and lifetime typing statistics.
+* **Key analytics** — See your most-used keys, key frequency, keyboard usage, and other typing statistics.
+* **Theme-aware interface** — Uses Omarchy/Quickshell styling and the active bar font and theme colors.
+* **Local analytics** — Typing statistics stay on the device, and the actual text you type is never stored.
 * **Bundled runtime** — Includes the `wayvibes` executable and bundled soundpacks, so a separate `wayvibes` installation is not required.
 
 ## Requirements
@@ -110,6 +120,56 @@ Click any soundpack in the list to start playing it.
 
 The currently selected soundpack is highlighted and marked with a check.
 
+### Profile
+
+Open **Profile** to see your typing progression.
+
+The profile includes:
+
+* Current rank
+* Progress toward the next rank
+* Lifetime words
+* Lifetime typing time
+* Lifetime key presses
+* Active days
+* Longest streak
+* Personal records
+* Completed achievements
+
+Your rank is based on lifetime words typed and becomes progressively harder as you move upward.
+
+### Stats
+
+Open **Stats** for detailed typing analytics.
+
+Stats include:
+
+* Day / Week / Month views
+* Words typed
+* Typing time
+* Typing vs idle time
+* Typing activity
+* Words heatmap
+* Consistency
+* Daily average
+* Best day
+* Longest streak
+* Lifetime totals
+* Most-used keys
+* Key frequency visualization
+* Keyboard usage heatmap
+* Backspace rate
+* Keystrokes per word
+* Words per typing hour
+
+### Privacy
+
+OmaVibes stores aggregate statistics such as word totals, typing time, and key-press counts.
+
+It does **not** store the actual text you type, typed sentences, key sequences, or per-key timestamps.
+
+Analytics are stored locally on the device.
+
 ### Random
 
 Click **Random** to choose a random soundpack.
@@ -118,7 +178,7 @@ When a search is active, random playback uses the currently filtered soundpacks.
 
 ### Turn Off
 
-Click **Turn Off** to stop the currently playing keyboard sounds.
+Click **Turn Off** to stop the currently playing typing sounds.
 
 ### Volume
 
@@ -128,7 +188,7 @@ Each soundpack can have its own saved volume level.
 
 ## Soundpacks
 
-OmaVibes includes 25 bundled keyboard soundpacks inside the `packs/` directory.
+OmaVibes includes the bundled soundpacks inside the `packs/` directory.
 
 The soundpacks are included with the plugin so OmaVibes works immediately after installation without requiring users to download additional soundpacks.
 
@@ -159,6 +219,9 @@ BarWidget.qml
                   +-- Search and filtering
                   +-- Random playback
                   +-- Volume control
+                  +-- Profile and rank progression
+                  +-- Typing statistics
+                  +-- Key analytics
                   +-- Persistent settings
                   +-- wayvibes process control
 ```
@@ -175,10 +238,16 @@ The bundled soundpacks are located at:
 packs/
 ```
 
-OmaVibes stores its persistent state at:
+OmaVibes stores its persistent plugin state at:
 
 ```text
 ~/.local/state/omarchy/omavibes.json
+```
+
+Typing analytics are stored at:
+
+```text
+~/.local/state/omarchy/omavibes-analytics.json
 ```
 
 ## Repository Structure
@@ -195,8 +264,10 @@ omavibes/
 ├── preview.png
 ├── bin/
 │   └── wayvibes
-└── packs/
-    └── <soundpacks>/
+├── packs/
+│   └── <soundpacks>/
+└── third_party/
+    └── wayvibes/
 ```
 
 ## Development
@@ -222,18 +293,30 @@ After making changes, restart the Omarchy shell:
 omarchy restart shell
 ```
 
+Rebuild the bundled Wayvibes runtime when changing its source:
+
+```bash
+./third_party/wayvibes/build.sh
+```
+
 ### Before Publishing
 
 Test the following:
 
 * Bar icon appears correctly
 * Panel opens and closes correctly
+* Profile opens correctly
+* Stats opens correctly
 * Soundpack selection works
 * Search filtering works
 * Random playback works
 * Turn Off works
 * Volume control works
 * Per-pack volume is preserved
+* Typing statistics update correctly
+* Key analytics update correctly
+* Rank progress updates correctly
+* Completed achievements appear correctly
 * Shell restart does not break the plugin
 * Plugin can be disabled and enabled again
 * Plugin can be removed cleanly
@@ -256,6 +339,7 @@ Removing the plugin does not remove user data stored outside the plugin director
 
 ```text
 ~/.local/state/omarchy/omavibes.json
+~/.local/state/omarchy/omavibes-analytics.json
 ~/wayvibes/
 ```
 
