@@ -2608,7 +2608,7 @@ Panel {
                                         }
                                         Text {
                                             anchors.bottom: parent.bottom
-                                            text: consistencySection.stats.averageWords.toFixed(1) + " words"
+                                            text: consistencySection.stats.dailyAverage.toFixed(1) + " words"
                                             color: Color.popups.text
                                             font.family: root.uiFont
                                             font.pixelSize: 13
@@ -2630,7 +2630,7 @@ Panel {
                                         }
                                         Text {
                                             anchors.bottom: parent.bottom
-                                            text: consistencySection.stats.bestDayLabel + " · " + consistencySection.stats.bestDayWords
+                                            text: (consistencySection.stats.bestDate || "—") + " · " + consistencySection.stats.bestWords
                                             color: root.vizTertiary
                                             font.family: root.uiFont
                                             font.pixelSize: 13
