@@ -65,6 +65,9 @@ QtObject {
     property var packVolumes: ({})
     property var keyboardDevices: []
     property string inputDevicePath: ""
+    property bool stateLoaded: false
+    property bool inputDeviceLoaded: false
+    property bool playbackRestored: false
     readonly property int defaultVolume: 3
 
     function volumeFor(packName) {
@@ -73,6 +76,14 @@ QtObject {
 
     function shellQuote(value) {
         return "'" + String(value).replace(/'/g, "'\\''") + "'"
+    }
+
+    function restorePlayback() {
+        if (playbackRestored || !stateLoaded || !inputDeviceLoaded || !currentPack || !inputDevicePath)
+            return
+
+        playbackRestored = true
+        play(currentPack)
     }
 
     function play(packName) {
@@ -182,15 +193,7 @@ QtObject {
     property Process launchProc: Process {}
 
     property Process keyboardDeviceProc: Process {
-        command: [
-            "bash", "-c",
-            "for d in /dev/input/by-id/*-event-kbd; do " +
-                "[ -e \"$d\" ] || continue; " +
-                "event=$(basename \"$(readlink -f \"$d\")\"); " +
-                "name=$(cat /sys/class/input/$event/device/name 2>/dev/null || basename \"$d\"); " +
-                "printf '%s\\t%s\\n' \"$d\" \"$name\"; " +
-            "done"
-        ]
+        command: [state.pluginBin, "--list-devices"]
         stdout: StdioCollector {
             onStreamFinished: {
                 const devices = text.trim().split("\n").filter(Boolean).map(function(line) {
@@ -205,7 +208,11 @@ QtObject {
     property Process inputDeviceReadProc: Process {
         command: ["bash", "-c", "cat ~/.config/wayvibes/input_device_path 2>/dev/null || true"]
         stdout: StdioCollector {
-            onStreamFinished: state.inputDevicePath = text.trim()
+            onStreamFinished: {
+                state.inputDevicePath = text.trim()
+                state.inputDeviceLoaded = true
+                state.restorePlayback()
+            }
         }
     }
 
@@ -242,6 +249,8 @@ QtObject {
                     state.isPlaying = false
                 } catch (e) {
                 }
+                state.stateLoaded = true
+                state.restorePlayback()
             }
         }
     }
