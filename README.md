@@ -113,6 +113,13 @@ omarchy restart shell
 
 Click the OmaVibes keyboard icon in the Omarchy top bar.
 
+### Keyboard input
+
+Use the settings cog in the top-right corner of the panel to choose which
+keyboard OmaVibes listens to. This is especially useful when more than one
+keyboard is connected. OmaVibes saves the stable `/dev/input/by-id` device
+path and uses that selection the next time playback starts.
+
 ### Search
 
 Use the search field to filter the available soundpacks by name.
